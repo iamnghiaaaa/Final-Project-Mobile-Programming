@@ -23,7 +23,7 @@ class _AddBookingState extends State<AddBookingScreen> {
   List<Booking> _bookings = [];
   bool _loading = true;
 
-  // Biến lưu thông tin phòng đang chọn để hiển thị ảnh
+  // Biến lưu thông tin phòng đang chọn
   Room? _selectedRoom;
 
   @override
@@ -45,7 +45,6 @@ class _AddBookingState extends State<AddBookingScreen> {
         _in = DateTime.parse(widget.booking!.checkIn); _out = DateTime.parse(widget.booking!.checkOut);
         _price = widget.booking!.totalPrice;
 
-        // Tìm phòng cũ để hiển thị ảnh ngay khi mở form sửa
         try {
           _selectedRoom = _rooms.firstWhere((r) => r.id == _roomId);
         } catch (e) {}
@@ -88,7 +87,6 @@ class _AddBookingState extends State<AddBookingScreen> {
     if (v == null) return;
     setState(() {
       _roomId = v;
-      // Tìm object Room để lấy giá và hình ảnh
       _selectedRoom = _rooms.firstWhere((r) => r.id == v);
       _price = _selectedRoom!.price * (_out.difference(_in).inDays == 0 ? 1 : _out.difference(_in).inDays);
     });
@@ -128,27 +126,19 @@ class _AddBookingState extends State<AddBookingScreen> {
 
         SizedBox(height: 15),
 
-        // 2. CHỌN PHÒNG
+        // 2. CHỌN PHÒNG (ĐÃ FIX LỖI TRÀN CHỮ)
         DropdownButtonFormField(
-          isExpanded: true, // QUAN TRỌNG: Dòng này giúp dropdown tự co giãn theo chiều ngang
-          value: _roomId,
-          items: _rooms.map((r) => DropdownMenuItem(
-            value: r.id,
-            child: Text(
-              "${r.roomName} - \$${r.price} / Đêm",
-              overflow: TextOverflow.ellipsis, // Nếu dài quá thì hiện dấu "..."
-              maxLines: 1, // Chỉ hiện trên 1 dòng
-            ),
-          )).toList(),
-          onChanged: onRoomChanged,
-          decoration: InputDecoration(
-            labelText: "Chọn Phòng",
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15), // Căn chỉnh lề cho đẹp
-          ),
+            isExpanded: true, // Fix lỗi sọc vàng đen
+            value: _roomId,
+            items: _rooms.map((r) => DropdownMenuItem(
+              value: r.id,
+              child: Text("${r.roomName} - \$${r.price}", overflow: TextOverflow.ellipsis, maxLines: 1),
+            )).toList(),
+            onChanged: onRoomChanged,
+            decoration: InputDecoration(labelText: "Chọn Phòng", border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15))
         ),
 
-        // --- 3. HIỂN THỊ ẢNH PHÒNG ĐANG CHỌN (MỚI) ---
+        // 3. HIỂN THỊ ẢNH PHÒNG
         if (_selectedRoom != null && _selectedRoom!.images.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 15.0),
@@ -169,7 +159,6 @@ class _AddBookingState extends State<AddBookingScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (ctx, err, stack) => Center(child: Icon(Icons.broken_image, color: Colors.grey)),
                         ),
-                        // Số thứ tự ảnh
                         Positioned(
                           bottom: 10, right: 10,
                           child: Container(
@@ -186,16 +175,40 @@ class _AddBookingState extends State<AddBookingScreen> {
             ),
           ),
 
-        if (_roomId != null && (_selectedRoom == null || _selectedRoom!.images.isEmpty))
+        // --- 4. HIỂN THỊ MÔ TẢ PHÒNG (MỚI THÊM) ---
+        if (_selectedRoom != null && _selectedRoom!.description.isNotEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 15),
-            child: Text("Phòng này chưa có hình ảnh", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
+            padding: const EdgeInsets.only(bottom: 15.0),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                      SizedBox(width: 5),
+                      Text("Thông tin phòng:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[800])),
+                    ],
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    _selectedRoom!.description,
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                ],
+              ),
+            ),
           ),
         // ----------------------------------------------
 
-        SizedBox(height: 10),
-
-        // 4. CHỌN NGÀY
+        // 5. CHỌN NGÀY
         ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text("Ngày nhận phòng (Check-In)"),
@@ -226,7 +239,7 @@ class _AddBookingState extends State<AddBookingScreen> {
 
         SizedBox(height: 20),
 
-        // 5. TỔNG TIỀN & NÚT LƯU
+        // 6. TỔNG TIỀN & NÚT LƯU
         Container(
           padding: EdgeInsets.all(15),
           decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(10)),
